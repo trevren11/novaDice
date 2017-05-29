@@ -1,0 +1,22 @@
+{
+    "name": "Nova Dice Extension",
+    "version": "0.0.1",
+    "manifest_version": 2,
+    "description": "Nova Exchange dice auto-roller",
+    "homepage_url": "http://trevren11.github.io",
+    "background": {
+        "scripts": [
+            "welcome.js"
+        ],
+        "persistent": true
+    },
+    "browser_action": {
+        "default_popup": "popup.html",
+        "default_title": "Click to set parameters"
+    },
+    "permissions": [
+        "https://novaexchange.com/dice/*",
+        "http://novaexchange.com/dice/*"
+    ]
+}
+

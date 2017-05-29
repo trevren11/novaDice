@@ -1,0 +1,1 @@
+alert('This extension is to be used on novaexchange.com/dice/');
