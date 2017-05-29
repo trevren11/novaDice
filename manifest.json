@@ -6,6 +6,8 @@
     "homepage_url": "http://trevren11.github.io",
     "background": {
         "scripts": [
+            "js/socket.js",
+            "js/jquery.js",
             "welcome.js"
         ],
         "persistent": true
@@ -16,7 +18,8 @@
     },
     "permissions": [
         "https://novaexchange.com/dice/*",
-        "http://novaexchange.com/dice/*"
+        "http://novaexchange.com/dice/*",
+        "tabs",
+        "activeTab"
     ]
 }
-

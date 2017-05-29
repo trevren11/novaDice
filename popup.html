@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
 
-<head></head>
+<head>
+</head>
 
 <body style="width: 300px">
-    <select>
+    <select id="crypto" name="crypto">
         <option value="XP">Experience</option>
         <option value="XRP">Ripple</option>
         <option value="LTC">Litecoin</option>
@@ -12,8 +13,14 @@
     </select>
     <button id="trade">Start rolling</button>
     <button id="kill">Stop</button>
+    <div id=winLossDiv>
+        <ul id=winLoss>
+            <li>Test</li>
+        </ul>
+    </div>
 </body>
-<script type="text/javascript" src="popup.js"></script>
+<!--<script type="text/javascript" src="js/socket.js"></script>-->
 
+<script type="text/javascript" src="popup.js"></script>
 
 </html>
