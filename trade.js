@@ -32,18 +32,25 @@ var startBet;
 var currency;
 var startBalance = 0;
 var currentBalance;
+var origStart;
+
 // var smallestValue = 0.00000001;
-var smallestValue = 0.00002;
-var decimals = 5;
+var smallestValue = 0.0000008;
+// var smallestValue = 0.00002;
+var decimals = 8;
 var currentBet = smallestValue;
 var ladder = 0;
 var maxLadder = 0;
 var maxLadders = 13; // maximum number of steps to go before resetting
-var increase = 1.1; // 10% increase
-var timeOut = 1000;
+var increase = 1.15; // 10% increase
+var timeOut = 300;
+// var timeOut = 150;
 var stopLoss; // if balance goes below this, quit
 
 var totalWins = 0, totalLosses = 0;
+var bet = smallestValue;
+var stopGain; // If I make x% gains, stop also
+var stopGainPercent = 100;
 
 (function setVariables() {
     target = "49"
@@ -65,6 +72,8 @@ function getInitialBalance() {
         startBalance = callback.data.balance;
         currentBalance = startBalance;
         stopLoss = startBalance - startBalance * 0.0001; // 1/100th a percent of total value
+        origStart = startBalance;
+        stopGain = stopGainPercent * origStart; // 
         console.log("Stop loss: " + stopLoss);
 
         startAutoTrading(callback);
@@ -76,14 +85,18 @@ var lossesInARow = 0;
 
 // start trading
 function startAutoTrading(callback) {
-
+    //console.log(callback);
     currentBalance = callback.data.balance;
-    console.log("Current Value: " + currentBalance + ",  Current Bet: " + bet);
-    console.log("Total wins/losses: " + totalWins + "/" + totalLosses +
-        ", longest ladder: " + maxLadder +
-        ",  lossesInARow: " + lossesInARow);
+
     var tg = (currentBalance - startBalance).toFixed(decimals);
-    console.log("Total gains: " + tg);
+    console.log("Current Value: " + currentBalance +
+        " Total gains: " + tg +
+        ", gains percentage: " + ((((currentBalance - startBalance) / (startBalance)) * 100).toFixed(3)) + "%");
+    console.log("Total wins/losses: " + totalWins + "/" + totalLosses +
+        ", win percentage: " + (((totalWins / (totalLosses + totalWins)) * 100).toFixed(3)) + "%" +
+        ", longest ladder: " + maxLadder +
+        ",  lossesInARow: " + lossesInARow +
+        ",  Current Bet: " + bet);
     if (ladder > maxLadder) maxLadder = ladder;
 
     // if win, reset to smallest increment
@@ -118,6 +131,14 @@ function upBet() {
     }
     bet = (bet * 2) * increase + smallestValue;
     bet = bet.toFixed(decimals);
+
+    // if value has increased 20%, up the starting value by 5%
+    if (currentBalance > startBalance * 1.01) {
+        console.log("Adding 0.5% to base value because added 1% value to starting value");
+        console.log("Old start: " + startBalance);
+        startBalance *= 1.005;
+        console.warn("New start: " + startBalance + " Original start: " + origStart + ", percent increase since start:" + ((((currentBalance - origStart) / (origStart)) * 100).toFixed(3)) + "%");
+    }
 }
 // single trade
 function singleTrade() {
@@ -125,7 +146,7 @@ function singleTrade() {
     // console.log("lossesInARow: " + lossesInARow);
 
     if (shouldIStop() == 0) {
-        console.log("Don't continue");
+        console.error("Stopped, original start balance was " + origStart + " current balance is " + currentBalance);
         return;
     }
 
@@ -134,6 +155,7 @@ function singleTrade() {
         'currency': currency,
         'bet': bet,
     }
+    // console.log(values);
     socket.emit('dice_roll', values, function (data) {
         // console.log(data.result);
         //console.log(data);
@@ -146,9 +168,17 @@ function singleTrade() {
 
 
 function shouldIStop() {
-    if (keepGoing == 0) return 0;
+    if (keepGoing == 0 && ladder == 0) return 0; // wait till reach a win
     if (ladder >= maxLadders) return 0;
     // if (currentBalance > stopLoss) return 0; // Lost enough to quit
+    if (currentBalance < startBalance - startBalance * .2) {
+        console.error("Quit because lost 20% of " + startBalance);
+        return 0;
+    }
+    if (currentBalance > stopGain) {
+        console.error("Quit because gained" + stopGainPercent + " percent increase from original start");
+        return 0;
+    }
     return 1;
 }
 
