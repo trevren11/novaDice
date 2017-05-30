@@ -2,20 +2,7 @@
 // Get information from input box
 console.log($('#crypto').val());
 
-var password = $('#crypto option:selected').text();
-// option:selected
-// var password = document.getElementById('crypto_type').value;
-console.log(password);
-
 var keepGoing = 1;
-(function wait() {
-    if (keepGoing == 1) {
-        // setTimeout(function () {
-        //     console.log("trading");
-        //     wait();
-        // }, 2000)
-    }
-})();
 
 // setup socket
 var socket;
@@ -44,17 +31,25 @@ var target;
 var startBet;
 var currency;
 var startBalance = 0;
-var smallestValue = 0.00000001;
+var currentBalance;
+// var smallestValue = 0.00000001;
+var smallestValue = 0.00002;
+var decimals = 5;
 var currentBet = smallestValue;
 var ladder = 0;
-var maxLadders = 8; // maximum number of steps to go before resetting
+var maxLadder = 0;
+var maxLadders = 13; // maximum number of steps to go before resetting
 var increase = 1.1; // 10% increase
 var timeOut = 1000;
+var stopLoss; // if balance goes below this, quit
+
+var totalWins = 0, totalLosses = 0;
 
 (function setVariables() {
     target = "49"
     startBet = smallestValue;
-    currency = "XP";
+    // currency = "XP";
+    currency = "LTC";
 })();
 
 // get amount of coins
@@ -68,6 +63,9 @@ function getInitialBalance() {
         console.log(callback);
         console.log(callback.data.balance);
         startBalance = callback.data.balance;
+        currentBalance = startBalance;
+        stopLoss = startBalance - startBalance * 0.0001; // 1/100th a percent of total value
+        console.log("Stop loss: " + stopLoss);
 
         startAutoTrading(callback);
     });
@@ -75,15 +73,23 @@ function getInitialBalance() {
 getInitialBalance();
 
 var lossesInARow = 0;
+
 // start trading
 function startAutoTrading(callback) {
 
-    console.log("Current Value: " + callback.data.balance);
-    console.log("Current Bet: " + bet);
+    currentBalance = callback.data.balance;
+    console.log("Current Value: " + currentBalance + ",  Current Bet: " + bet);
+    console.log("Total wins/losses: " + totalWins + "/" + totalLosses +
+        ", longest ladder: " + maxLadder +
+        ",  lossesInARow: " + lossesInARow);
+    var tg = (currentBalance - startBalance).toFixed(decimals);
+    console.log("Total gains: " + tg);
+    if (ladder > maxLadder) maxLadder = ladder;
 
     // if win, reset to smallest increment
     if (callback.data.win == 1) {
         // console.log("Won!");
+        totalWins++;
         lossesInARow = 0;
         // $('#winLoss').append("<li>Win</li>");
         lossesInARow = 0;
@@ -96,6 +102,7 @@ function startAutoTrading(callback) {
 
         lossesInARow++;
         ladder++;
+        totalLosses++;
         // $('#winLoss').append("<li>Lost</li>");
         upBet();
         singleTrade();
@@ -104,18 +111,18 @@ function startAutoTrading(callback) {
 }
 
 function upBet() {
-    console.log("upBet");
+    // console.log("upBet");
     if (ladder == maxLadders) {
         bet = smallestValue;
         return;
     }
     bet = (bet * 2) * increase + smallestValue;
-    bet = bet.toFixed(8);
+    bet = bet.toFixed(decimals);
 }
 // single trade
 function singleTrade() {
-    console.log("singleTrade");
-    console.log("lossesInARow: " + lossesInARow);
+    // console.log("singleTrade");
+    // console.log("lossesInARow: " + lossesInARow);
 
     if (shouldIStop() == 0) {
         console.log("Don't continue");
@@ -129,7 +136,7 @@ function singleTrade() {
     }
     socket.emit('dice_roll', values, function (data) {
         // console.log(data.result);
-        console.log(data);
+        //console.log(data);
 
         setTimeout(function () {
             startAutoTrading(data);
@@ -141,8 +148,7 @@ function singleTrade() {
 function shouldIStop() {
     if (keepGoing == 0) return 0;
     if (ladder >= maxLadders) return 0;
-    if (keepGoing == 0) return 0;
-
+    // if (currentBalance > stopLoss) return 0; // Lost enough to quit
     return 1;
 }
 
