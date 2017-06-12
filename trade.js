@@ -43,28 +43,27 @@ var decimals = 8;
 var currentBet = smallestValue;
 var ladder = 0;
 var maxLadder = 0;
-var maxLadders = 20; // maximum number of steps to go before resetting
+var maxLadders = 8; // maximum number of steps to go before resetting
 var increase = 1.1; // 10% increase
-var timeOut = 300;
+var timeOut = 500;
 // var timeOut = 150;
 var stopLoss; // if balance goes below this, quit
 
 var totalWins = 0, totalLosses = 0;
 var bet = smallestValue;
 var stopGain; // If I make x% gains, stop also
-var stopGainPercent = 100;
+var stopGainPercent = 10;
 
 var equalizeNumber = 20;
 var equalizeCounter = equalizeNumber;
 var equalizeLosses = 0;
 var needToEqualize = true;
-var modNumber = 20;
+var modNumber = 4;
 
 var maxBigLosses = 10; // If get to this ladder and lose this many times, quit, eventually adjust with the % increase 
 var bigLosses = 0; // current big losses
 
-var divisor = 100000000;
-// var divisor = 60000;
+var partOfWhole = 6000;
 
 (function setVariables() {
     target = "49"
@@ -89,7 +88,6 @@ function getInitialBalance() {
         origStart = startBalance;
         stopGain = stopGainPercent * origStart; // 
         console.log("Stop loss: " + stopLoss);
-        smallestValue = startBalance / divisor; //millionth of start
         startAutoTrading(callback);
     });
 }
@@ -101,7 +99,7 @@ var lossesInARow = 0;
 function startAutoTrading(callback) {
     //console.log(callback);
     currentBalance = callback.data.balance;
-
+    adjustBet();
     var tg = (currentBalance - startBalance).toFixed(decimals);
     if (ladder > maxLadder) maxLadder = ladder;
 
@@ -124,9 +122,13 @@ function startAutoTrading(callback) {
     }
 
     needToEqualize = true;
+
     // if win, reset to smallest increment
     if (callback.data.win == 1) {
-        // console.log("Won!");
+        console.log("Won!");
+        smallestValue = currentBalance / partOfWhole;
+        smallestValue = (smallestValue).toFixed(8);
+        console.log(smallestValue);
         totalWins++;
         lossesInARow = 0;
         // $('#winLoss').append("<li>Win</li>");
@@ -156,15 +158,19 @@ function upBet() {
         return;
     }
     bet = (bet * 2) * increase + smallestValue;
-    bet = bet.toFixed(decimals);
+    bet = parseFloat(bet).toFixed(decimals);
 
+
+}
+
+function adjustBet() {
     // if value has increased 20%, up the starting value by 5%
     if (currentBalance > startBalance * 1.001) {
         console.log("Adding 0.05% to base value because added 0.1% value to starting value");
         console.log("Old start: " + startBalance);
         startBalance *= 1.0005;
         console.warn("New start: " + startBalance + " Original start: " + origStart + ", percent increase since start:" + ((((currentBalance - origStart) / (origStart)) * 100).toFixed(3)) + "%");
-        smallestValue = currentBalance / divisor; //millionth of current balance
+        smallestValue = currentBalance / partOfWhole; //millionth of current balance
     }
 }
 
