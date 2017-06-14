@@ -37,8 +37,8 @@ var origStart;
 var minValue = 0.00000001;
 // var smallestValue = 0.00000001;
 // var smallestValue = 0.000008;
-// var smallestValue = 0.00000001;
-var smallestValue = 0.5;
+var smallestValue = 0.00000001;
+// var smallestValue = 0.5;
 var decimals = 8;
 var currentBet = smallestValue;
 var ladder = 0;
@@ -58,17 +58,19 @@ var equalizeNumber = 20;
 var equalizeCounter = equalizeNumber;
 var equalizeLosses = 0;
 var needToEqualize = true;
-var modNumber = 4;
+var modNumber = 8;
 
 var maxBigLosses = 10; // If get to this ladder and lose this many times, quit, eventually adjust with the % increase 
 var bigLosses = 0; // current big losses
+
+var balance = 0.0001;
 
 var partOfWhole = 6000;
 
 (function setVariables() {
     target = "49"
     startBet = smallestValue;
-    currency = "XP";
+    currency = "MOON";
     // currency = "LTC";
 })();
 
@@ -135,6 +137,7 @@ function startAutoTrading(callback) {
         lossesInARow = 0;
         ladder = 0;
         bet = smallestValue;
+        bet = castNumber(bet);
         needToEqualize = true;
     } else {
         // lost, get new value to bet
@@ -155,22 +158,28 @@ function upBet() {
     // console.log("upBet");
     if (ladder == maxLadders) {
         bet = smallestValue;
+        bet = castNumber(bet);
         return;
     }
-    bet = (bet * 2) * increase + smallestValue;
-    bet = parseFloat(bet).toFixed(decimals);
+    bet = (bet * 2) * increase + parseFloat(smallestValue);
+    bet = castNumber(bet);
+}
 
-
+function castNumber(number) {
+    number = parseFloat(number).toFixed(decimals);    
+    number = parseFloat(number).toPrecision(3); // sig figs
+    return number;
 }
 
 function adjustBet() {
     // if value has increased 20%, up the starting value by 5%
-    if (currentBalance > startBalance * 1.001) {
+    while (currentBalance > startBalance * 1.001) {
         console.log("Adding 0.05% to base value because added 0.1% value to starting value");
         console.log("Old start: " + startBalance);
         startBalance *= 1.0005;
         console.warn("New start: " + startBalance + " Original start: " + origStart + ", percent increase since start:" + ((((currentBalance - origStart) / (origStart)) * 100).toFixed(3)) + "%");
         smallestValue = currentBalance / partOfWhole; //millionth of current balance
+        smallestValue = castNumber(smallestValue);
     }
 }
 
@@ -197,6 +206,7 @@ function equalize(numberLeft, origCallback) { // If all of these return a losing
                 // return;
                 // reset to start again
                 bet = smallestValue;
+                bet = castNumber(bet);
                 ladder = 0;
                 lossesInARow = 0;
             }
@@ -225,14 +235,14 @@ function singleTrade() {
         'currency': currency,
         'bet': bet,
     }
-    // console.log(values);
+    console.log(values);
     socket.emit('dice_roll', values, function (data) {
         // console.log(data.result);
         //console.log(data);
 
         setTimeout(function () {
             startAutoTrading(data);
-        }, timeOut)
+        }, timeOut + ((Math.random() * 10000) % 5000))
     });
 };
 
@@ -247,6 +257,7 @@ function shouldIStop() {
         bigLosses++;
         console.warn("Have had " + bigLosses + " big loss");
         bet = smallestValue;
+        bet = castNumber(bet);
         ladder = 0;
         lossesInARow = 0;
     }
