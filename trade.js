@@ -52,7 +52,7 @@ var stopLoss; // if balance goes below this, quit
 var totalWins = 0, totalLosses = 0;
 var bet = smallestValue;
 var stopGain; // If I make x% gains, stop also
-var stopGainPercent = 10;
+var stopGainMultiplier = 2;
 
 var equalizeNumber = 20;
 var equalizeCounter = equalizeNumber;
@@ -82,13 +82,13 @@ function getInitialBalance() {
         'bet': currentBet
     }
     socket.emit('dice_roll', values, function (callback) {
-        console.log(callback);
+        // console.log(callback);
         console.log(callback.data.balance);
         startBalance = callback.data.balance;
         currentBalance = startBalance;
         stopLoss = startBalance - startBalance * 0.0001; // 1/100th a percent of total value
         origStart = startBalance;
-        stopGain = stopGainPercent * origStart; // 
+        stopGain = stopGainMultiplier * origStart; // 
         console.log("Stop loss: " + stopLoss);
         startAutoTrading(callback);
     });
@@ -127,10 +127,10 @@ function startAutoTrading(callback) {
 
     // if win, reset to smallest increment
     if (callback.data.win == 1) {
-        console.log("Won!");
+        // console.log("Won!");
         smallestValue = currentBalance / partOfWhole;
         smallestValue = (smallestValue).toFixed(8);
-        console.log(smallestValue);
+        // console.log(smallestValue);
         totalWins++;
         lossesInARow = 0;
         // $('#winLoss').append("<li>Win</li>");
@@ -167,7 +167,7 @@ function upBet() {
 
 function castNumber(number) {
     number = parseFloat(number).toFixed(decimals);    
-    number = parseFloat(number).toPrecision(3); // sig figs
+    number = parseFloat(number).toPrecision(2); // sig figs
     return number;
 }
 
@@ -235,7 +235,7 @@ function singleTrade() {
         'currency': currency,
         'bet': bet,
     }
-    console.log(values);
+    // console.log(values);
     socket.emit('dice_roll', values, function (data) {
         // console.log(data.result);
         //console.log(data);
@@ -267,7 +267,7 @@ function shouldIStop() {
         return 0;
     }
     if (currentBalance > stopGain) {
-        console.error("Quit because gained" + stopGainPercent + " percent increase from original start");
+        console.error("Quit because gained" + stopGainMultiplier + " percent increase from original start");
         return 0;
     }
     return 1;
