@@ -11,21 +11,6 @@ if (socket == null) {
     socket = io.connect('//' + document.domain + ':' + location.port + namespace, { pingInterval: 5000, 'sync disconnect on unload': true });
 }
 
-// Make a box to show win losses
-// function makeBox() {
-//     var $div = $("<div style='background:black;width: 200px; height:400px;position: fixed;bottom:auto;top:0px;right:auto;left:0px;padding: 1em' ></div>").appendTo('body');
-//     $div.attr('id', 'holder');
-// }
-
-// var box = $('#holder');
-// if (box == undefined) {
-//     makeBox();
-// }
-// makeBox();
-// get coin
-
-// get value of coin
-
 // set variables
 var target;
 var startBet;
@@ -35,10 +20,7 @@ var currentBalance;
 var origStart;
 
 var minValue = 0.00000001;
-// var smallestValue = 0.00000001;
-// var smallestValue = 0.000008;
 var smallestValue = 0.00000001;
-// var smallestValue = 0.5;
 var decimals = 8;
 var currentBet = smallestValue;
 var ladder = 0;
@@ -46,13 +28,12 @@ var maxLadder = 0;
 var maxLadders = 8; // maximum number of steps to go before resetting
 var increase = 1.1; // 10% increase
 var timeOut = 500;
-// var timeOut = 150;
 var stopLoss; // if balance goes below this, quit
 
 var totalWins = 0, totalLosses = 0;
 var bet = smallestValue;
 var stopGain; // If I make x% gains, stop also
-var stopGainMultiplier = 2;
+var stopGainMultiplier = 1.2;
 
 var equalizeNumber = 20;
 var equalizeCounter = equalizeNumber;
@@ -65,13 +46,12 @@ var bigLosses = 0; // current big losses
 
 var balance = 0.0001;
 
-var partOfWhole = 6000;
+var partOfWhole = 300;
 
 (function setVariables() {
     target = "49"
     startBet = smallestValue;
-    currency = "MOON";
-    // currency = "LTC";
+    currency = "LTC";
 })();
 
 // get amount of coins
@@ -173,13 +153,17 @@ function castNumber(number) {
 
 function adjustBet() {
     // if value has increased 20%, up the starting value by 5%
+    var adjusted = false;
     while (currentBalance > startBalance * 1.001) {
-        console.log("Adding 0.05% to base value because added 0.1% value to starting value");
-        console.log("Old start: " + startBalance);
+        adjusted = true;
         startBalance *= 1.0005;
-        console.warn("New start: " + startBalance + " Original start: " + origStart + ", percent increase since start:" + ((((currentBalance - origStart) / (origStart)) * 100).toFixed(3)) + "%");
         smallestValue = currentBalance / partOfWhole; //millionth of current balance
         smallestValue = castNumber(smallestValue);
+    }
+    if (adjusted){
+        console.log("Adding 0.05% to base value because added 0.1% value to starting value");
+        console.log("Old start: " + startBalance);
+        console.warn("New start: " + startBalance + " Original start: " + origStart + ", percent increase since start:" + ((((currentBalance - origStart) / (origStart)) * 100).toFixed(3)) + "%");
     }
 }
 
@@ -200,10 +184,8 @@ function equalize(numberLeft, origCallback) { // If all of these return a losing
         }
         if (numberLeft == 0) {
             // if lost all of them, exit
-            if (equalizeLosses >= equalizeNumber * .70) { // pass with 70% fail or better
-                console.warn("After " + equalizeNumber + " losses, exiting since 70% failed");
-                // keepGoing = 0;
-                // return;
+            if (equalizeLosses >= equalizeNumber * .70) { // pass with better than 70% fail
+                console.warn("After " + equalizeNumber + " losses, stopping current ladder since 70% failed");
                 // reset to start again
                 bet = smallestValue;
                 bet = castNumber(bet);
@@ -262,12 +244,12 @@ function shouldIStop() {
         lossesInARow = 0;
     }
     // if (currentBalance > stopLoss) return 0; // Lost enough to quit
-    if (currentBalance < startBalance - startBalance * .05 || currentBalance < origStart - origStart * .05) {
-        console.error("Quit because lost 5% of " + startBalance);
+    if (currentBalance < startBalance - startBalance * .2 || currentBalance < origStart - origStart * .05) {
+        console.error("Quit because lost 20% or 5% of " + startBalance);
         return 0;
     }
     if (currentBalance > stopGain) {
-        console.error("Quit because gained" + stopGainMultiplier + " percent increase from original start");
+        console.error("Quit because gained " + stopGainMultiplier + " percent increase from original start");
         return 0;
     }
     return 1;
